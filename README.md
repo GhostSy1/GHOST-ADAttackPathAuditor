@@ -1,10 +1,17 @@
 # GHOST-ADAttackPathAuditor
 
-Authorized Active Directory attack path and misconfiguration auditor. Developed by Abdulaziz (Ghost-SY1).
+Professional security assessment and artifact analysis utility. Developed by Abdulaziz (Ghost-SY1).
 
 ## Overview
 
-`GHOST-ADAttackPathAuditor` is a specialized tool designed for authorized red team and Active Directory security assessments. It inspects local export artifacts (such as BloodHound JSON exports, group policy backups, or LDAP dumps), computes SHA-256 integrity hashes, identifies privilege escalation paths and delegation risks, and generates structured JSON, CSV, and SARIF reports without executing network requests or live exploitation.
+`GHOST-ADAttackPathAuditor` is an advanced, production-grade security utility built under the Ghost-SY1 v4.0-PRO standard. It parses local artifacts, calculates SHA-256 integrity hashes, evaluates security indicators, and generates structured JSON, CSV, SARIF 2.1.0, and executive PDF reports without live exploitation or network execution.
+
+## Features
+
+- **Strict Zero-Simulation Engine**: Operates exclusively on real local operator-provided inputs.
+- **Cryptographic Provenance**: Every inspected artifact is bound to a SHA-256 integrity digest.
+- **Multi-Format Reporting**: Native export to JSON, CSV, SARIF 2.1.0, and ReportLab PDF.
+- **Interactive CLI & Banner**: Instant terminal screen clear, Ghost-SY1 banner initialization, and non-interactive CI support.
 
 ## Installation & Setup
 
@@ -14,8 +21,15 @@ cd GHOST-ADAttackPathAuditor
 python3 main.py --help
 ```
 
-## Usage
+## Usage Example
 
 ```bash
-python3 main.py --input ./ad_exports/ --output report.json --sarif report.sarif
+python3 main.py --input ./target/ --output report.json --sarif report.sarif --pdf report.pdf
 ```
+
+## Documentation
+
+- Architecture: `docs/architecture.md`
+- CLI Reference: `docs/cli-reference.md`
+- Security Policy: `SECURITY.md`
+- Contributing: `CONTRIBUTING.md`
