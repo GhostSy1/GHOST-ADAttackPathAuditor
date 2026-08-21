@@ -12,21 +12,16 @@ from pathlib import Path
 TOOL = "GHOST-ADAttackPathAuditor"
 VERSION = "3.0-PRO"
 PROFILE = "Active Directory attack path and misconfiguration review"
-RULES = [
-    ("AD-DELEGATION", r"unconstrained delegation|constrained delegation|rbcd|trustedfordelegation"),
-    ("AD-ACCOUNT", r"adminCount=1|domain admins|enterprise admins|krbtgt|as-rep-roastable|kerberoastable"),
-    ("AD-TRUST", r"external trust|forest trust|sid-history|selective authentication"),
-    ("AD-POLICY", r"password policy|sysvol|gpp|group policy|acl|genericall|writedac")
-]
+RULES = [('AD-DELEGATION', 'unconstrained delegation|constrained delegation|rbcd|trustedfordelegation'), ('AD-ACCOUNT', 'adminCount=1|domain admins|enterprise admins|krbtgt|as-rep-roastable|kerberoastable'), ('AD-TRUST', 'external trust|forest trust|sid-history|selective authentication')]
 
 
 def clear_screen() -> None:
     if sys.stdout.isatty():
-        print("\\033[2J\\033[H", end="")
+        print("\033[2J\033[H", end="")
 
 
 def render_banner() -> None:
-    banner = r\"\"\"
+    banner = """
    _____ _   _  ____  ____ _____
   / ____| | | |/ __ \\ / __ \\_   _|
  | |  __| |_| | |  | | |  | || |
@@ -34,7 +29,7 @@ def render_banner() -> None:
  | |__| | | | | |__| | |__| || |_
   \\_____|_| |_|\\____/ \\____/_____|
       GHOST-ADAttackPathAuditor v3.0-PRO (Zero-Guessing Engine)
-\"\"\"
+"""
     print(banner)
 
 
@@ -51,7 +46,7 @@ def digest(path: Path) -> str:
 
 
 def evidence(value: str) -> str:
-    return value.strip().replace("\\x00", "")[:280]
+    return value.strip().replace("\x00", "")[:280]
 
 
 def scan_file(path: Path) -> list[dict]:
@@ -66,14 +61,14 @@ def scan_file(path: Path) -> list[dict]:
             if re.search(pattern, line, re.I):
                 findings.append({
                     "rule_id": rule_id,
-                    "severity": "high" if "DELEGATION" in rule_id or "ACCOUNT" in rule_id else "medium",
+                    "severity": "high" if any(k in rule_id for k in ["PUBLIC", "WEAK", "KEY", "PRIV", "ROOT", "SUID", "OPEN", "IMPLICIT", "FAIL", "DELEGATION", "ACCOUNT"]) else "medium",
                     "confidence": "high",
-                    "title": f"AD Attack Path Indicator: {{rule_id}}",
-                    "description": f"Matched pattern {{rule_id}} in Active Directory export artifact.",
+                    "title": f"Observable risk indicator: {{rule_id}}",
+                    "description": f"Matched rule {{rule_id}} in inspected artifact.",
                     "evidence": evidence(line),
                     "source": "operator-input",
                     "location": f"{{path}}:{{line_no}}",
-                    "remediation": "Review Active Directory ACEs, delegation settings, and credential hygiene."
+                    "remediation": "Validate configuration, harden target posture, or remediate finding in source."
                 })
     return findings
 
@@ -130,7 +125,7 @@ def write_sarif(report: dict, path: Path) -> None:
 
 def run(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=f"{TOOL} v{VERSION} - {PROFILE}")
-    parser.add_argument("--input", type=Path, help="Path to AD export file or directory")
+    parser.add_argument("--input", type=Path, help="Path to target file or directory")
     parser.add_argument("--output", type=Path, default=Path("report.json"))
     parser.add_argument("--csv", type=Path)
     parser.add_argument("--sarif", type=Path)
@@ -145,37 +140,37 @@ def run(argv: list[str] | None = None) -> int:
     if not target:
         if sys.stdin.isatty():
             try:
-                raw = input("Enter Active Directory export path: ").strip()
+                raw = input("Enter target file or directory path: ").strip()
                 if raw:
                     target = Path(raw)
             except (KeyboardInterrupt, EOFError):
-                print("\\n[!] Aborted by operator.")
+                print("\n[!] Aborted by operator.")
                 return 1
         if not target:
             parser.error("--input is required in non-interactive mode.")
 
     if not target.exists():
-        print(f"[!] Error: target does not exist: {{target}}")
+        print(f"[!] Error: target does not exist: {target}")
         return 2
 
-    print(f"[*] Analyzing Active Directory target: {{target.resolve()}} (Strict Zero-Simulation Mode)...")
+    print(f"[*] Analyzing target: {target.resolve()} (Strict Zero-Simulation Mode)...")
     report = analyze(target)
 
     args.output.write_text(json.dumps(report, indent=2), encoding="utf-8")
-    print(f"[+] JSON report saved to: {{args.output}}")
+    print(f"[+] JSON report saved to: {args.output}")
 
     if args.csv:
         with args.csv.open("w", newline="", encoding="utf-8") as handle:
             writer = csv.DictWriter(handle, fieldnames=["rule_id", "severity", "confidence", "title", "description", "evidence", "source", "location", "remediation"])
             writer.writeheader()
             writer.writerows(report["findings"])
-        print(f"[+] CSV report saved to: {{args.csv}}")
+        print(f"[+] CSV report saved to: {args.csv}")
 
     if args.sarif:
         write_sarif(report, args.sarif)
-        print(f"[+] SARIF report saved to: {{args.sarif}}")
+        print(f"[+] SARIF report saved to: {args.sarif}")
 
-    print(f"[+] Completed successfully. Findings: {{report['finding_count']}} | Zero fake data produced.")
+    print(f"[+] Completed successfully. Findings: {report['finding_count']} | Zero fake data produced.")
     return 0
 
 
